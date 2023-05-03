@@ -21,7 +21,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     console.log('isExist', isExist);
     try{
         const namespace =  uuidv4()
-        const result =  await ingestData(body.file.url.split('.')[1], `./${body.file.url}`, PINECONE_NAME_SPACE);
+        const result =  await ingestData(body.file.url.split('.')[1], `./${body.file.url}`, PINECONE_NAME_SPACE, body.chunkSize, body.chunkOverlap);
         const data = {
             namespace,
             ...body

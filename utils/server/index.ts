@@ -1,5 +1,12 @@
 import { Message } from '@/types/chat';
 import { OpenAIModel } from '@/types/openai';
+import { ConversationalRetrievalQAChain } from "langchain/chains";
+import { OpenAI } from "langchain/llms/openai";
+import { pinecone } from '@/utils/pinecone'
+import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
+import { PineconeStore } from 'langchain/vectorstores/pinecone';
+import { PINECONE_INDEX_NAME, PINECONE_NAME_SPACE } from '@/config/pinecone';
+
 
 import { AZURE_DEPLOYMENT_ID, OPENAI_API_HOST, OPENAI_API_TYPE, OPENAI_API_VERSION, OPENAI_ORGANIZATION } from '../app/const';
 
@@ -21,6 +28,65 @@ export class OpenAIError extends Error {
     this.param = param;
     this.code = code;
   }
+}
+
+
+const loadVectorStore = async () => {
+  const embeddings = new OpenAIEmbeddings();
+  const index = pinecone.Index(PINECONE_INDEX_NAME); //change to your own index name
+  const vectorStore = await PineconeStore.fromExistingIndex(
+    embeddings,
+    {
+      pineconeIndex: index,
+      textKey: 'text',
+      namespace: PINECONE_NAME_SPACE, //namespace comes from your config folder
+    },
+  );
+  return vectorStore;
+}
+
+
+const makeChain = async (modelName: string, systemPrompt: string, temperature : number,) => {
+  const vectorStore = await loadVectorStore();
+  const model = new OpenAI(
+    {
+      modelName,
+      temperature
+    }
+  );
+  // const doChain = loadQAChain(
+  //   new OpenAIChat({
+  //     openAIApiKey: process.env.OPENAI_API_KEY,
+  //     modelName,
+  //     temperature,
+  //     streaming: true,
+  //     callbackManager: CallbackManager.fromHandlers({
+  //       async handleLLMNewToken(token: string){
+  //         onTokenStream && onTokenStream(token)
+  //       }
+  //     })
+  //   }),
+  // );
+  const chain = ConversationalRetrievalQAChain.fromLLM(
+    model,
+    vectorStore.asRetriever(),
+    {
+      qaTemplate: systemPrompt,
+      questionGeneratorTemplate: '',
+      returnSourceDocuments: false
+    }
+  )
+  return chain;
+}
+
+const doChat = async (chain: ConversationalRetrievalQAChain, messages: Message[]) => {
+  // const [...histroy] = messages;
+  const question = messages.pop();
+  const responses = await chain.call({
+    question: question?.content || '',
+    chat_history: messages.map((message) => message.content),
+  });
+  return responses;
 }
 
 export const OpenAIStream = async (

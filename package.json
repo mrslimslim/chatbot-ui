@@ -2,6 +2,7 @@
   "name": "ai-chatbot-starter",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -10,7 +11,8 @@
     "format": "prettier --write .",
     "test": "vitest",
     "coverage": "vitest run --coverage",
-    "ingest": "tsx -r dotenv/config scripts/ingest-data.ts"
+    "ingest": "tsx -r dotenv/config scripts/ingest-data.ts",
+    "clear": "tsx -r dotenv/config scripts/clear-ingest.ts "
   },
   "dependencies": {
     "@ant-design/icons": "^5.0.1",

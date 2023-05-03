@@ -12,12 +12,8 @@ import { CSVLoader } from "langchain/document_loaders/fs/csv";
 /* Name of directory to retrieve your files from */
 // const filePath = 'docs';
 
-export const ingestData = async (extention: string, filepath: string, namespace: string) => {
+export const ingestData = async (extention: string, filepath: string, namespace: string, chunkSize: number, chunkOverlap: number) => {
   try {
-    /*load raw docs from the all files in the directory */
-    // const directoryLoader = new DirectoryLoader(filePath, {
-    //   '.pdf': (path) => new CustomPDFLoader(path),
-    // });
     let loader = null
     switch (extention) {
       case 'txt':
@@ -37,14 +33,11 @@ export const ingestData = async (extention: string, filepath: string, namespace:
         break;
     }
 
-
-    // const loader = new PDFLoader(filePath);
     const rawDocs = await loader.load();
 
-    /* Split text into chunks */
     const textSplitter = new RecursiveCharacterTextSplitter({
-      chunkSize: 1000,
-      chunkOverlap: 200,
+      chunkSize,
+      chunkOverlap,
     });
 
     const docs = await textSplitter.splitDocuments(rawDocs);
@@ -56,9 +49,9 @@ export const ingestData = async (extention: string, filepath: string, namespace:
     const index = pinecone.Index(PINECONE_INDEX_NAME); //change to your own index name
 
     //embed the PDF documents
-    const result = await PineconeStore.fromDocuments(docs, embeddings, {
+    await PineconeStore.fromDocuments(docs, embeddings, {
       pineconeIndex: index,
-      namespace: PINECONE_NAME_SPACE,
+      namespace: namespace,
       textKey: 'text',
     });
     console.log('ingestion complete');

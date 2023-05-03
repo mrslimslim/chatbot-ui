@@ -13,6 +13,7 @@
 /.next/
 /out/
 /dist
+/files/*
 
 # production
 /build
