@@ -1,4 +1,5 @@
 import { FC, useContext, useState } from 'react';
+import { useQuery } from 'react-query'
 import { UploadOutlined } from '@ant-design/icons';
 import { Checkbox, Select, Button, Modal, Input, Upload, InputNumber, message, Form } from 'antd';
 import type { UploadProps } from 'antd';
@@ -8,16 +9,19 @@ import type { CheckboxChangeEvent } from 'antd/es/checkbox';
 
 interface Props {
     label: string;
+    onChangeCheckKnowledge: (checked: boolean) => void;
 }
 
 export const Knowledge: FC<Props> = ({
-    label
+    label,
+    onChangeCheckKnowledge
 }) => {
     const [checked, setChecked] = useState(false);
     const [showDialog, setShowDialog] = useState(false);
     const onChange = (e: CheckboxChangeEvent) => {
         console.log(`checked = ${e.target.checked}`);
         setChecked(e.target.checked);
+        onChangeCheckKnowledge(e.target.checked);
     };
     const handleChange = (value: string) => {
         console.log(`selected ${value}`);
@@ -30,10 +34,20 @@ export const Knowledge: FC<Props> = ({
         setShowDialog(false);
     }
 
-    const list = [{
-        value: '123',
-        name: '外贸清单'
-    }]
+   
+
+    const fetchData = async () => {
+      const response = await  fetch('/api/knowledge-list').then(res => res.json())
+      console.log('response',response);
+      console.log('response',response.data);
+      return response.data.map((item: { knowledgeName: any; }) => ({
+        label: item.knowledgeName,
+        value: item.knowledgeName
+      }))
+      
+    }
+
+    const { data: list, isLoading, error } = useQuery('knowledge', fetchData);
     return <div className="flex flex-col">
         <label className="mb-2 text-left xwtext-neutral-700 dark:text-neutral-400">
             {label}
@@ -47,7 +61,7 @@ export const Knowledge: FC<Props> = ({
                         onChange={handleChange}
                         options={list}
                     />
-                    <Button onClick={handleAddKnowledge}>新增知识库</Button>
+                    <Button  onClick={handleAddKnowledge}>新增知识库</Button>
                 </div> : null
             }
 
@@ -88,7 +102,7 @@ const KnowledgeDialog: FC<KnowledgeDialogProps> = ({
     };
 
     const onFinish = async (values: any) => {
-        setLoading(true);
+        // setLoading(true);
         const data = {
             ...values,
             file: values.file[0].response
@@ -104,11 +118,11 @@ const KnowledgeDialog: FC<KnowledgeDialogProps> = ({
         const result = await response.json();
         console.log('result',result);
         if(result.code === 200) {
-            message.success('生成成功');
+            message.success('知识库生成成功！');
         }
-        // setLoading(false);
-        // resetForm();
-        // closeDialog();
+        setLoading(false);
+        resetForm();
+        closeDialog();
 
     };
 

@@ -1,4 +1,4 @@
-import { FC, useContext, useState } from 'react';
+import React, { FC, useContext, useState, Ref } from 'react';
 
 import { useTranslation } from 'next-i18next';
 
@@ -8,13 +8,19 @@ import HomeContext from '@/pages/api/home/home.context';
 
 interface Props {
   label: string;
+  ref ?: any;
   onChangeTemperature: (temperature: number) => void;
 }
 
-export const TemperatureSlider: FC<Props> = ({
+export interface TemperatureRefObj {
+  updateTemperature: (temperature: number) => void;
+}
+
+// eslint-disable-next-line react/display-name
+export const TemperatureSlider: FC<Props> = React.forwardRef(({
   label,
   onChangeTemperature,
-}) => {
+}, ref: Ref<TemperatureRefObj>) => {
   const {
     state: { conversations },
   } = useContext(HomeContext);
@@ -25,9 +31,19 @@ export const TemperatureSlider: FC<Props> = ({
   const { t } = useTranslation('chat');
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = parseFloat(event.target.value);
-    setTemperature(newValue);
-    onChangeTemperature(newValue);
+    updateTemperature(newValue);
   };
+
+
+
+  const updateTemperature = (temperature: number) => {
+    setTemperature(temperature);
+    onChangeTemperature(temperature);
+  };
+
+  React.useImperativeHandle(ref, () => ({
+    updateTemperature,
+  }));
 
   return (
     <div className="flex flex-col">
@@ -64,4 +80,4 @@ export const TemperatureSlider: FC<Props> = ({
       </ul>
     </div>
   );
-};
+});

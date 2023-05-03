@@ -31,7 +31,7 @@ import { ChatLoader } from './ChatLoader';
 import { ErrorMessageDiv } from './ErrorMessageDiv';
 import { ModelSelect } from './ModelSelect';
 import { SystemPrompt } from './SystemPrompt';
-import { TemperatureSlider } from './Temperature';
+import { TemperatureSlider, TemperatureRefObj } from './Temperature';
 import { MemoizedChatMessage } from './MemoizedChatMessage';
 import { Knowledge } from './Knowledge'
 interface Props {
@@ -63,6 +63,8 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [showScrollDownButton, setShowScrollDownButton] =
     useState<boolean>(false);
+
+  const temperatureRef = useRef<TemperatureRefObj  | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -423,6 +425,7 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
 
                       <TemperatureSlider
                         label={t('Temperature')}
+                        ref={temperatureRef}
                         onChangeTemperature={(temperature) =>
                           handleUpdateConversation(selectedConversation, {
                             key: 'temperature',
@@ -430,7 +433,9 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
                           })
                         }
                       />
-                      <Knowledge label="知识库" />
+                      <Knowledge label="知识库" onChangeCheckKnowledge={(isChecked)=>{
+                        temperatureRef.current?.updateTemperature(isChecked ? 0: 1);
+                      }}/>
                     </div>
                   )}
                 </div>
