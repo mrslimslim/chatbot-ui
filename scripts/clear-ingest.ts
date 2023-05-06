@@ -8,7 +8,7 @@ export const run = async () => {
 
         index.delete1({
             deleteAll: true,
-            namespace: PINECONE_NAME_SPACE,
+            namespace: 'fb0da9bc837e4dc0b7fc478cd81b6e47',
         });
     }catch (error) {
         console.log('error', error);

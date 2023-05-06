@@ -12,10 +12,10 @@ import { CSVLoader } from "langchain/document_loaders/fs/csv";
 /* Name of directory to retrieve your files from */
 // const filePath = 'docs';
 
-export const ingestData = async (extention: string, filepath: string, namespace: string, chunkSize: number, chunkOverlap: number) => {
+export const ingestData = async (extension: string, filepath: string, namespace: string, chunkSize: number, chunkOverlap: number) => {
   try {
     let loader = null
-    switch (extention) {
+    switch (extension) {
       case 'txt':
         loader = new TextLoader(filepath);
         break;

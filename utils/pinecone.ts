@@ -1,8 +1,8 @@
 import { PineconeClient } from '@pinecone-database/pinecone';
 
-if (!process.env.PINECONE_ENVIRONMENT || !process.env.PINECONE_API_KEY) {
-  throw new Error('Pinecone environment or api key vars missing');
-}
+// if (!process.env.PINECONE_ENVIRONMENT || !process.env.PINECONE_API_KEY) {
+//   throw new Error('Pinecone environment or api key vars missing');
+// }
 
 export async function initPinecone() {
   try {
@@ -20,4 +20,4 @@ export async function initPinecone() {
   }
 }
 
-export const pinecone = await initPinecone();
+// export const pinecone = await initPinecone();

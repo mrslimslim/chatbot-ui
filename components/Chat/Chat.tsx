@@ -64,7 +64,7 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
   const [showScrollDownButton, setShowScrollDownButton] =
     useState<boolean>(false);
 
-  const temperatureRef = useRef<TemperatureRefObj  | null>(null);
+  const temperatureRef = useRef<TemperatureRefObj | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -101,6 +101,8 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
           key: apiKey,
           prompt: updatedConversation.prompt,
           temperature: updatedConversation.temperature,
+          isKnowledgeBase: updatedConversation.isKnowledgeBase,
+          knowledge: updatedConversation.knowledge,
         };
         const endpoint = getEndpoint(plugin);
         let body;
@@ -433,9 +435,24 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
                           })
                         }
                       />
-                      <Knowledge label="知识库" onChangeCheckKnowledge={(isChecked)=>{
-                        temperatureRef.current?.updateTemperature(isChecked ? 0: 1);
-                      }}/>
+                      <Knowledge label="知识库" onChangeCheckKnowledge={(isChecked) => {
+                        temperatureRef.current?.updateTemperature(isChecked ? 0 : 1);
+                        console.log(isChecked ? 0 : 1);
+                        handleUpdateConversation(selectedConversation, {
+                          key: 'temperature',
+                          value: isChecked ? 0 : 1,
+                        })
+                        handleUpdateConversation(selectedConversation, {
+                          key: 'isKnowledgeBase',
+                          value: isChecked,
+                        })
+                      }} onChangeKnowledge={(knowledge) => {
+                        handleUpdateConversation(selectedConversation, {
+                          key: 'knowledge',
+                          value: knowledge,
+                        })
+                      }
+                      } />
                     </div>
                   )}
                 </div>

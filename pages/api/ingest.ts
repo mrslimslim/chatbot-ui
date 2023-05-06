@@ -3,6 +3,7 @@ import { writeFileSync, readFileSync, existsSync } from 'fs';
 import { ingestData } from '../../scripts/ingest-data'
 import { v4 as uuidv4 } from 'uuid';
 import { PINECONE_NAME_SPACE } from '@/config/pinecone';
+import path from 'path'
 
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -18,10 +19,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     // body => {url: '/files/xxx.pdf'}
     // 判断文件是否存在
     const isExist = existsSync(`./${body.file.url}`);
-    console.log('isExist', isExist);
     try{
-        const namespace =  uuidv4()
-        const result =  await ingestData(body.file.url.split('.')[1], `./${body.file.url}`, PINECONE_NAME_SPACE, body.chunkSize, body.chunkOverlap);
+        // filename
+        const filename = path.basename(body.file.url);
+        const namespace = filename;
+        const extension = path.extname(body.file.url);
+        const result =  await ingestData(extension, `./${body.file.url}`, namespace, body.chunkSize, body.chunkOverlap);
         const data = {
             namespace,
             ...body

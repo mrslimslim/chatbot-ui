@@ -4,17 +4,20 @@ import { UploadOutlined } from '@ant-design/icons';
 import { Checkbox, Select, Button, Modal, Input, Upload, InputNumber, message, Form } from 'antd';
 import type { UploadProps } from 'antd';
 import type { CheckboxChangeEvent } from 'antd/es/checkbox';
+import { Knowledge as KnowledgeSetting } from '@/types/chat';
 
 
 
 interface Props {
     label: string;
     onChangeCheckKnowledge: (checked: boolean) => void;
+    onChangeKnowledge: (value: KnowledgeSetting) => void;
 }
 
 export const Knowledge: FC<Props> = ({
     label,
-    onChangeCheckKnowledge
+    onChangeCheckKnowledge,
+    onChangeKnowledge
 }) => {
     const [checked, setChecked] = useState(false);
     const [showDialog, setShowDialog] = useState(false);
@@ -23,8 +26,12 @@ export const Knowledge: FC<Props> = ({
         setChecked(e.target.checked);
         onChangeCheckKnowledge(e.target.checked);
     };
-    const handleChange = (value: string) => {
-        console.log(`selected ${value}`);
+    const handleChange = (value: string, option: any) => {
+        onChangeKnowledge({
+            namespace: option.namespace,
+            chunkSize: option.chunkSize,
+            chunkSizeOverlap: option.chunkSizeOverlap,
+        });
     };
     const handleAddKnowledge = () => {
         setShowDialog(true);
@@ -34,17 +41,16 @@ export const Knowledge: FC<Props> = ({
         setShowDialog(false);
     }
 
-   
-
     const fetchData = async () => {
-      const response = await  fetch('/api/knowledge-list').then(res => res.json())
-      console.log('response',response);
-      console.log('response',response.data);
-      return response.data.map((item: { knowledgeName: any; }) => ({
-        label: item.knowledgeName,
-        value: item.knowledgeName
-      }))
-      
+        const response = await fetch('/api/knowledge-list').then(res => res.json())
+        return response.data.map((item: { knowledgeName: any; chunkSize: number, chunkSizeOverlap: number, namespace: string }) => ({
+            label: item.knowledgeName,
+            value: item.knowledgeName,
+            chunkSize: item.chunkSize,
+            chunkSizeOverlap: item.chunkSizeOverlap,
+            namespace: item.namespace
+        }))
+
     }
 
     const { data: list, isLoading, error } = useQuery('knowledge', fetchData);
@@ -61,18 +67,19 @@ export const Knowledge: FC<Props> = ({
                         onChange={handleChange}
                         options={list}
                     />
-                    <Button  onClick={handleAddKnowledge}>新增知识库</Button>
+                    <Button onClick={handleAddKnowledge}>新增知识库</Button>
                 </div> : null
             }
 
         </div>
-        <KnowledgeDialog visible={showDialog} closeDialog={closeDialog} />
+        <KnowledgeDialog visible={showDialog} onChangeKnowledge={onChangeKnowledge} closeDialog={closeDialog} />
     </div>;
 }
 
 interface KnowledgeDialogProps {
     visible: boolean;
     closeDialog: () => void;
+    onChangeKnowledge: (value: KnowledgeSetting) => void;
 }
 
 const KnowledgeDialog: FC<KnowledgeDialogProps> = ({
@@ -102,7 +109,7 @@ const KnowledgeDialog: FC<KnowledgeDialogProps> = ({
     };
 
     const onFinish = async (values: any) => {
-        // setLoading(true);
+        setLoading(true);
         const data = {
             ...values,
             file: values.file[0].response
@@ -110,14 +117,14 @@ const KnowledgeDialog: FC<KnowledgeDialogProps> = ({
         const response = await fetch('/api/ingest', {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
+                'Content-Type': 'application/json',
             },
             body: JSON.stringify(data),
         });
         // console.log(response);
         const result = await response.json();
-        console.log('result',result);
-        if(result.code === 200) {
+        console.log('result', result);
+        if (result.code === 200) {
             message.success('知识库生成成功！');
         }
         setLoading(false);

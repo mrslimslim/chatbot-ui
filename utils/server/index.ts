@@ -1,20 +1,27 @@
-import { Message } from '@/types/chat';
+import { Knowledge, Message } from '@/types/chat';
 import { OpenAIModel } from '@/types/openai';
-import { ConversationalRetrievalQAChain } from "langchain/chains";
-import { OpenAI } from "langchain/llms/openai";
-import { pinecone } from '@/utils/pinecone'
-import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
-import { PineconeStore } from 'langchain/vectorstores/pinecone';
+
+import {
+  AZURE_DEPLOYMENT_ID,
+  OPENAI_API_HOST,
+  OPENAI_API_TYPE,
+  OPENAI_API_VERSION,
+  OPENAI_ORGANIZATION,
+} from '../app/const';
+import { webSearch } from '../web-search';
+
 import { PINECONE_INDEX_NAME, PINECONE_NAME_SPACE } from '@/config/pinecone';
-
-
-import { AZURE_DEPLOYMENT_ID, OPENAI_API_HOST, OPENAI_API_TYPE, OPENAI_API_VERSION, OPENAI_ORGANIZATION } from '../app/const';
-
+import { PineconeClient } from '@pinecone-database/pinecone';
 import {
   ParsedEvent,
   ReconnectInterval,
   createParser,
 } from 'eventsource-parser';
+import { CallbackManager } from 'langchain/callbacks';
+import { ConversationalRetrievalQAChain } from 'langchain/chains';
+import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
+import { OpenAI } from 'langchain/llms/openai';
+import { PineconeStore } from 'langchain/vectorstores/pinecone';
 
 export class OpenAIError extends Error {
   type: string;
@@ -30,92 +37,210 @@ export class OpenAIError extends Error {
   }
 }
 
-
 const loadVectorStore = async () => {
   const embeddings = new OpenAIEmbeddings();
+  const pinecone = new PineconeClient();
+  await pinecone.init({
+    environment: process.env.PINECONE_ENVIRONMENT ?? '', //this is in the dashboard
+    apiKey: process.env.PINECONE_API_KEY ?? '',
+  });
   const index = pinecone.Index(PINECONE_INDEX_NAME); //change to your own index name
-  const vectorStore = await PineconeStore.fromExistingIndex(
-    embeddings,
-    {
-      pineconeIndex: index,
-      textKey: 'text',
-      namespace: PINECONE_NAME_SPACE, //namespace comes from your config folder
-    },
-  );
+  const vectorStore = await PineconeStore.fromExistingIndex(embeddings, {
+    pineconeIndex: index,
+    textKey: 'text',
+    namespace: PINECONE_NAME_SPACE, //namespace comes from your config folder
+  });
   return vectorStore;
-}
+};
 
-
-const makeChain = async (modelName: string, systemPrompt: string, temperature : number,) => {
+const makeChain = async (
+  modelName: string,
+  systemPrompt: string,
+  temperature: number,
+  onTokenStream?: (token: string) => void,
+  onCloseStream?: () => void,
+) => {
   const vectorStore = await loadVectorStore();
-  const model = new OpenAI(
-    {
-      modelName,
-      temperature
-    }
-  );
-  // const doChain = loadQAChain(
-  //   new OpenAIChat({
-  //     openAIApiKey: process.env.OPENAI_API_KEY,
-  //     modelName,
-  //     temperature,
-  //     streaming: true,
-  //     callbackManager: CallbackManager.fromHandlers({
-  //       async handleLLMNewToken(token: string){
-  //         onTokenStream && onTokenStream(token)
-  //       }
-  //     })
-  //   }),
-  // );
-  const chain = ConversationalRetrievalQAChain.fromLLM(
+  // const documentsReturned = 4;
+  const model = new OpenAI({
+    modelName,
+    temperature,
+    n: 1,
+    streaming: true,
+    callbackManager: CallbackManager.fromHandlers({
+      async handleLLMNewToken(token: string) {
+        if (!token) return;
+        onTokenStream && onTokenStream(token);
+      },
+      async handleLLMEnd() {
+        console.log('end');
+        onCloseStream && onCloseStream();
+      },
+    }),
+  });
+  return ConversationalRetrievalQAChain.fromLLM(
     model,
     vectorStore.asRetriever(),
     {
       qaTemplate: systemPrompt,
       questionGeneratorTemplate: '',
-      returnSourceDocuments: false
-    }
-  )
-  return chain;
-}
+      returnSourceDocuments: false,
+    },
+  );
+};
 
-const doChat = async (chain: ConversationalRetrievalQAChain, messages: Message[]) => {
-  // const [...histroy] = messages;
+const doChat = async (
+  chain: ConversationalRetrievalQAChain,
+  messages: Message[],
+) => {
   const question = messages.pop();
-  const responses = await chain.call({
+  await chain.call({
     question: question?.content || '',
     chat_history: messages.map((message) => message.content),
   });
-  return responses;
-}
+};
+
+const rules = {
+  // 以'/s'开头 且包含满足url的字符串
+  search: (str: string) => {
+    return str.startsWith('/s') && str.slice(3).match(/(http(s)?:\/\/)?\S+/);
+  },
+};
+
+// 根据不同的参数选择进入不同的调用方式
+const chatProxyParser = (
+  model: OpenAIModel,
+  systemPrompt: string,
+  temperature: number,
+  key: string,
+  messages: Message[],
+  url: string,
+  isKnowledgeBase?: boolean,
+  knowledge?: Knowledge,
+) => {
+  //获取messages的最后一条信息
+  const question = messages[messages.length - 1];
+  // 判断question是否search规则
+  if (rules.search(question.content)) {
+    // 如果是search规则，进入webSearch
+
+    // 正则提取url,做容错处理
+    let url = '';
+    const maybeUrl = question.content.slice(3).match(/(http(s)?:\/\/)?\S+/);
+    if (maybeUrl && maybeUrl.length > 0) {
+      url = maybeUrl[0];
+    } else {
+      return normalChatParse(
+        model,
+        systemPrompt,
+        temperature,
+        key,
+        messages,
+        url,
+      );
+    }
+    const maybeQuestion = question.content.match(
+      /(?<=\s)(?!https?:\/\/)([\u4e00-\u9fa5_a-zA-Z0-9\s]+)/g,
+    );
+    let questionContent = '';
+    if (maybeQuestion && maybeQuestion.length > 0) {
+      questionContent = maybeQuestion[0];
+    } else {
+      questionContent = '请用200字左右总结这条链接包含的内容，并用中文描述';
+    }
+
+    // 提取问题，排除 \s 和 url后的字符串作为问题
+    return webChatParse(model, temperature, url, questionContent);
+  }
+  // 如果不是search规则，进入normalChatParse
+  return normalChatParse(model, systemPrompt, temperature, key, messages, url);
+};
 
 export const OpenAIStream = async (
   model: OpenAIModel,
   systemPrompt: string,
-  temperature : number,
+  temperature: number,
   key: string,
   messages: Message[],
+  isKnowledgeBase?: boolean,
+  knowledge?: Knowledge,
 ) => {
   let url = `${OPENAI_API_HOST}/v1/chat/completions`;
   if (OPENAI_API_TYPE === 'azure') {
     url = `${OPENAI_API_HOST}/openai/deployments/${AZURE_DEPLOYMENT_ID}/chat/completions?api-version=${OPENAI_API_VERSION}`;
   }
+
+  // let isEnd = false;
+  // const stream = new ReadableStream({
+  //   async start(controller) {
+  //     try {
+  //       const chain = await makeChain(
+  //         model.id,
+  //         systemPrompt,
+  //         temperature,
+  //         (token) => {
+  //           console.log(token);
+  //           if (isEnd) return;
+  //           const queue = encoder.encode(token);
+  //           controller.enqueue(queue);
+  //           console.log('output token text', token);
+  //         },
+  //         () => {
+  //           if (!isEnd) controller.close();
+  //           isEnd = true;
+  //         },
+  //       );
+  //       await doChat(chain, messages);
+  //     } catch (e) {
+  //       controller.error(e);
+  //     }
+  //   },
+  // });
+  const parser = await chatProxyParser(
+    model,
+    systemPrompt,
+    temperature,
+    key,
+    messages,
+    url,
+    isKnowledgeBase,
+    knowledge,
+  );
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      parser(controller);
+    },
+  });
+
+  return stream;
+};
+
+const normalChatParse = async (
+  model: OpenAIModel,
+  systemPrompt: string,
+  temperature: number,
+  key: string,
+  messages: Message[],
+  url: string,
+) => {
   const res = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
       ...(OPENAI_API_TYPE === 'openai' && {
-        Authorization: `Bearer ${key ? key : process.env.OPENAI_API_KEY}`
+        Authorization: `Bearer ${key ? key : process.env.OPENAI_API_KEY}`,
       }),
       ...(OPENAI_API_TYPE === 'azure' && {
-        'api-key': `${key ? key : process.env.OPENAI_API_KEY}`
+        'api-key': `${key ? key : process.env.OPENAI_API_KEY}`,
       }),
-      ...((OPENAI_API_TYPE === 'openai' && OPENAI_ORGANIZATION) && {
-        'OpenAI-Organization': OPENAI_ORGANIZATION,
-      }),
+      ...(OPENAI_API_TYPE === 'openai' &&
+        OPENAI_ORGANIZATION && {
+          'OpenAI-Organization': OPENAI_ORGANIZATION,
+        }),
     },
     method: 'POST',
     body: JSON.stringify({
-      ...(OPENAI_API_TYPE === 'openai' && {model: model.id}),
+      ...(OPENAI_API_TYPE === 'openai' && { model: model.id }),
       messages: [
         {
           role: 'system',
@@ -149,35 +274,50 @@ export const OpenAIStream = async (
       );
     }
   }
+  return async (controller: any) => {
+    const onParse = (event: ParsedEvent | ReconnectInterval) => {
+      if (event.type === 'event') {
+        const data = event.data;
 
-  const stream = new ReadableStream({
-    async start(controller) {
-      const onParse = (event: ParsedEvent | ReconnectInterval) => {
-        if (event.type === 'event') {
-          const data = event.data;
-
-          try {
-            const json = JSON.parse(data);
-            if (json.choices[0].finish_reason != null) {
-              controller.close();
-              return;
-            }
-            const text = json.choices[0].delta.content;
-            const queue = encoder.encode(text);
-            controller.enqueue(queue);
-          } catch (e) {
-            controller.error(e);
+        try {
+          const json = JSON.parse(data);
+          if (json.choices[0].finish_reason != null) {
+            controller.close();
+            return;
           }
+          const text = json.choices[0].delta.content;
+          const queue = encoder.encode(text);
+          controller.enqueue(queue);
+        } catch (e) {
+          controller.error(e);
         }
-      };
-
-      const parser = createParser(onParse);
-
-      for await (const chunk of res.body as any) {
-        parser.feed(decoder.decode(chunk));
       }
-    },
-  });
+    };
 
-  return stream;
+    const parser = createParser(onParse);
+
+    for await (const chunk of res.body as any) {
+      parser.feed(decoder.decode(chunk));
+    }
+  };
+};
+
+const webChatParse = async (
+  model: OpenAIModel,
+  temperature: number,
+  url: string,
+  question: string,
+) => {
+  const encoder = new TextEncoder();
+  return (controller: any) => {
+    webSearch(
+      { modelName: model, temperature, url, question },
+      (token) => {
+        controller.enqueue(encoder.encode(token));
+      },
+      () => {
+        controller.close();
+      },
+    );
+  };
 };

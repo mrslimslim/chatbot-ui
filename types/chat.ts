@@ -13,6 +13,14 @@ export interface ChatBody {
   key: string;
   prompt: string;
   temperature: number;
+  isKnowledgeBase?: boolean;
+  knowledge ?: Knowledge;
+}
+
+export interface Knowledge {
+  namespace: string;
+  chunkSize: number;
+  chunkSizeOverlap: number;
 }
 
 export interface Conversation {
@@ -22,5 +30,7 @@ export interface Conversation {
   model: OpenAIModel;
   prompt: string;
   temperature: number;
+  isKnowledgeBase?: boolean;
+  knowledge?: Knowledge;
   folderId: string | null;
 }
