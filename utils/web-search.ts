@@ -18,7 +18,7 @@ export async function webSearch(
   onCloseStream: () => void,
 ) {
   const model = new ChatOpenAI({
-    temperature,
+    temperature: 0,
     streaming: true,
     callbacks: CallbackManager.fromHandlers({
       async handleLLMNewToken(token: string) {

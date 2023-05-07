@@ -9,7 +9,7 @@ import {
   OPENAI_ORGANIZATION,
 } from '../app/const';
 import { webSearch } from '../web-search';
-
+import { webLoader } from '../web-loader';
 import { PINECONE_INDEX_NAME, PINECONE_NAME_SPACE } from '@/config/pinecone';
 import { PineconeClient } from '@pinecone-database/pinecone';
 import {
@@ -310,14 +310,20 @@ const webChatParse = async (
 ) => {
   const encoder = new TextEncoder();
   return (controller: any) => {
-    webSearch(
-      { modelName: model, temperature, url, question },
-      (token) => {
-        controller.enqueue(encoder.encode(token));
-      },
-      () => {
-        controller.close();
-      },
-    );
+    webLoader( { modelName: model, temperature, url, question },(token) => {
+      controller.enqueue(encoder.encode(token));
+    },
+    () => {
+      controller.close();
+    });
+    // webSearch(
+    //   { modelName: model, temperature, url, question },
+    //   (token) => {
+    //     controller.enqueue(encoder.encode(token));
+    //   },
+    //   () => {
+    //     controller.close();
+    //   },
+    // );
   };
 };
