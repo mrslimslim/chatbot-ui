@@ -55,7 +55,7 @@ export async function webLoader(
         }
       : {};
   const loader = new PuppeteerWebBaseLoader(url, {
-    launchOptions: {},
+    launchOptions: launchConfig,
   });
   const web = await loader.load();
   const text = await getText(web[0].pageContent);
