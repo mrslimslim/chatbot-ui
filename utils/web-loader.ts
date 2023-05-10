@@ -6,7 +6,7 @@ import { CallbackManager } from 'langchain/callbacks';
 import { RetrievalQAChain } from 'langchain/chains';
 import { ChatOpenAI } from 'langchain/chat_models/openai';
 import { Document } from 'langchain/document';
-import { PlaywrightWebBaseLoader } from 'langchain/document_loaders/web/playwright';
+import { PuppeteerWebBaseLoader } from 'langchain/document_loaders/web/puppeteer';
 import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
 import { ContextualCompressionRetriever } from 'langchain/retrievers/contextual_compression';
 import { LLMChainExtractor } from 'langchain/retrievers/document_compressors/chain_extract';
@@ -47,7 +47,7 @@ export async function webLoader(
   });
   // const baseCompressor = LLMChainExtractor.fromLLM(model);
   const embeddings: any = new OpenAIEmbeddings();
-  const loader = new PlaywrightWebBaseLoader(url, {});
+  const loader = new PuppeteerWebBaseLoader(url, {});
   const web = await loader.load();
   const text = await getText(web[0].pageContent);
   const textSplitter = new RecursiveCharacterTextSplitter({
