@@ -11,7 +11,7 @@ import { CallbackManager } from 'langchain/callbacks';
 import { ChatOpenAI } from 'langchain/chat_models/openai';
 import { Document } from 'langchain/document';
 import { CheerioWebBaseLoader } from 'langchain/document_loaders/web/cheerio';
-import { PlaywrightWebBaseLoader } from 'langchain/document_loaders/web/playwright';
+import { PuppeteerWebBaseLoader } from 'langchain/document_loaders/web/puppeteer';
 import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
 // import { RetrievalQAChain } from "langchain/chains";
 import { AIChatMessage, HumanChatMessage } from 'langchain/schema';
@@ -102,7 +102,7 @@ const getGoogleSearchResult = async (query: string) => {
   console.log('sources', sources);
 
   const fetchSourceHTMl = async (url: string) => {
-    const loader = new PlaywrightWebBaseLoader(url);
+    const loader = new PuppeteerWebBaseLoader(url);
     const web = await loader.load();
     return web[0].pageContent;
   };
