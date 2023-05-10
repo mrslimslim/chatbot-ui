@@ -102,7 +102,16 @@ const getGoogleSearchResult = async (query: string) => {
   console.log('sources', sources);
 
   const fetchSourceHTMl = async (url: string) => {
-    const loader = new PuppeteerWebBaseLoader(url);
+    const launchConfig =
+      process.env.NODE_ENV === 'production'
+        ? {
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+            executablePath: '/bin/chromium-browser',
+          }
+        : {};
+    const loader = new PuppeteerWebBaseLoader(url, {
+      launchOptions: launchConfig,
+    });
     const web = await loader.load();
     return web[0].pageContent;
   };
