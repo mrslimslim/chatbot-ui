@@ -260,7 +260,7 @@ const webChatParse = async (
   const encoder = new TextEncoder();
   return (controller: any) => {
     // webLoader
-    webSearch(
+    webLoader(
       { modelName: model, temperature, url, question },
       (token) => {
         controller.enqueue(encoder.encode(token));
