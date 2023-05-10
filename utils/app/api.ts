@@ -10,5 +10,5 @@ export const getEndpoint = (plugin: Plugin | null) => {
     return 'api/google';
   }
 
-  return 'api/chat';
+  return 'api/chat-knowledge';
 };
