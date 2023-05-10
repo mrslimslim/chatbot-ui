@@ -12,6 +12,7 @@ import { googleSearch } from '../google-search-loader';
 // import { webSearch } from '../web-search';
 import { knowledgeLoader } from '../knowledge-loader';
 import { webLoader } from '../web-loader';
+import { webSearch } from '../web-search';
 
 import { PINECONE_INDEX_NAME, PINECONE_NAME_SPACE } from '@/config/pinecone';
 import { PineconeClient } from '@pinecone-database/pinecone';
@@ -259,7 +260,7 @@ const webChatParse = async (
   const encoder = new TextEncoder();
   return (controller: any) => {
     // webLoader
-    webLoader(
+    webSearch(
       { modelName: model, temperature, url, question },
       (token) => {
         controller.enqueue(encoder.encode(token));

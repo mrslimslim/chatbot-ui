@@ -47,7 +47,16 @@ export async function webLoader(
   });
   // const baseCompressor = LLMChainExtractor.fromLLM(model);
   const embeddings: any = new OpenAIEmbeddings();
-  const loader = new PuppeteerWebBaseLoader(url, {});
+  const launchConfig =
+    process.env.NODE_ENV === 'production'
+      ? {
+          args: ['--no-sandbox', '--disable-setuid-sandbox'],
+          executablePath: '/bin/chromium-browser',
+        }
+      : {};
+  const loader = new PuppeteerWebBaseLoader(url, {
+    launchOptions: {},
+  });
   const web = await loader.load();
   const text = await getText(web[0].pageContent);
   const textSplitter = new RecursiveCharacterTextSplitter({
