@@ -28,6 +28,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
 
     const googleData = await googleRes.json();
 
+    console.log('googleData', googleData);
+
     const sources: GoogleSource[] = googleData.items.map((item: any) => ({
       title: item.title,
       link: item.link,
@@ -116,9 +118,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${key ? key : process.env.OPENAI_API_KEY}`,
-        ...(process.env.OPENAI_ORGANIZATION && {
-          'OpenAI-Organization': process.env.OPENAI_ORGANIZATION,
-        }),
       },
       method: 'POST',
       body: JSON.stringify({
@@ -137,12 +136,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
     });
 
     const { choices: choices2 } = await answerRes.json();
+    console.log('choices2', choices2);
     const answer = choices2[0].message.content;
 
     res.status(200).json({ answer });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Error'})
+    res.status(500).json({ error: 'Error' });
   }
 };
 

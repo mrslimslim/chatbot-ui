@@ -8,8 +8,11 @@ import {
   OPENAI_API_VERSION,
   OPENAI_ORGANIZATION,
 } from '../app/const';
-import { webSearch } from '../web-search';
+import { googleSearch } from '../google-search-loader';
+// import { webSearch } from '../web-search';
+import { knowledgeLoader } from '../knowledge-loader';
 import { webLoader } from '../web-loader';
+
 import { PINECONE_INDEX_NAME, PINECONE_NAME_SPACE } from '@/config/pinecone';
 import { PineconeClient } from '@pinecone-database/pinecone';
 import {
@@ -53,57 +56,14 @@ const loadVectorStore = async () => {
   return vectorStore;
 };
 
-const makeChain = async (
-  modelName: string,
-  systemPrompt: string,
-  temperature: number,
-  onTokenStream?: (token: string) => void,
-  onCloseStream?: () => void,
-) => {
-  const vectorStore = await loadVectorStore();
-  // const documentsReturned = 4;
-  const model = new OpenAI({
-    modelName,
-    temperature,
-    n: 1,
-    streaming: true,
-    callbackManager: CallbackManager.fromHandlers({
-      async handleLLMNewToken(token: string) {
-        if (!token) return;
-        onTokenStream && onTokenStream(token);
-      },
-      async handleLLMEnd() {
-        console.log('end');
-        onCloseStream && onCloseStream();
-      },
-    }),
-  });
-  return ConversationalRetrievalQAChain.fromLLM(
-    model,
-    vectorStore.asRetriever(),
-    {
-      qaTemplate: systemPrompt,
-      questionGeneratorTemplate: '',
-      returnSourceDocuments: false,
-    },
-  );
-};
-
-const doChat = async (
-  chain: ConversationalRetrievalQAChain,
-  messages: Message[],
-) => {
-  const question = messages.pop();
-  await chain.call({
-    question: question?.content || '',
-    chat_history: messages.map((message) => message.content),
-  });
-};
-
 const rules = {
   // 以'/s'开头 且包含满足url的字符串
   search: (str: string) => {
     return str.startsWith('/s') && str.slice(3).match(/(http(s)?:\/\/)?\S+/);
+  },
+  // 以'/g'开头
+  google: (str: string) => {
+    return str.startsWith('/g');
   },
 };
 
@@ -119,6 +79,7 @@ const chatProxyParser = (
   knowledge?: Knowledge,
 ) => {
   //获取messages的最后一条信息
+  console.log('knowledge', knowledge);
   const question = messages[messages.length - 1];
   // 判断question是否search规则
   if (rules.search(question.content)) {
@@ -145,12 +106,25 @@ const chatProxyParser = (
     let questionContent = '';
     if (maybeQuestion && maybeQuestion.length > 0) {
       questionContent = maybeQuestion[0];
-    } else {
-      questionContent = '请用200字左右总结这条链接包含的内容，并用中文描述';
     }
 
     // 提取问题，排除 \s 和 url后的字符串作为问题
     return webChatParse(model, temperature, url, questionContent);
+  } else if (rules.google(question.content)) {
+    const maybeQuestion = question.content.match(/(?<=\/g\s+)(.+)/g);
+    let questionContent = '';
+    if (maybeQuestion && maybeQuestion.length > 0) {
+      questionContent = maybeQuestion[0];
+    }
+    return googleSearchParse(model, temperature, url, questionContent);
+  } else if (isKnowledgeBase) {
+    return knowledgeLoaderParse(
+      model,
+      temperature,
+      systemPrompt,
+      question.content,
+      knowledge,
+    );
   }
   // 如果不是search规则，进入normalChatParse
   return normalChatParse(model, systemPrompt, temperature, key, messages, url);
@@ -170,32 +144,6 @@ export const OpenAIStream = async (
     url = `${OPENAI_API_HOST}/openai/deployments/${AZURE_DEPLOYMENT_ID}/chat/completions?api-version=${OPENAI_API_VERSION}`;
   }
 
-  // let isEnd = false;
-  // const stream = new ReadableStream({
-  //   async start(controller) {
-  //     try {
-  //       const chain = await makeChain(
-  //         model.id,
-  //         systemPrompt,
-  //         temperature,
-  //         (token) => {
-  //           console.log(token);
-  //           if (isEnd) return;
-  //           const queue = encoder.encode(token);
-  //           controller.enqueue(queue);
-  //           console.log('output token text', token);
-  //         },
-  //         () => {
-  //           if (!isEnd) controller.close();
-  //           isEnd = true;
-  //         },
-  //       );
-  //       await doChat(chain, messages);
-  //     } catch (e) {
-  //       controller.error(e);
-  //     }
-  //   },
-  // });
   const parser = await chatProxyParser(
     model,
     systemPrompt,
@@ -310,20 +258,62 @@ const webChatParse = async (
 ) => {
   const encoder = new TextEncoder();
   return (controller: any) => {
-    webLoader( { modelName: model, temperature, url, question },(token) => {
-      controller.enqueue(encoder.encode(token));
-    },
-    () => {
-      controller.close();
-    });
-    // webSearch(
-    //   { modelName: model, temperature, url, question },
-    //   (token) => {
-    //     controller.enqueue(encoder.encode(token));
-    //   },
-    //   () => {
-    //     controller.close();
-    //   },
-    // );
+    // webLoader
+    webLoader(
+      { modelName: model, temperature, url, question },
+      (token) => {
+        controller.enqueue(encoder.encode(token));
+      },
+      () => {
+        controller.close();
+      },
+    );
+  };
+};
+
+const googleSearchParse = async (
+  model: OpenAIModel,
+  temperature: number,
+  url: string,
+  question: string,
+) => {
+  const encoder = new TextEncoder();
+  return (controller: any) => {
+    googleSearch(
+      { modelName: model, temperature, url, question },
+      (token) => {
+        controller.enqueue(encoder.encode(token));
+      },
+      () => {
+        controller.close();
+      },
+    );
+  };
+};
+
+const knowledgeLoaderParse = async (
+  model: OpenAIModel,
+  temperature: number,
+  prompt: string,
+  question: string,
+  knowledge: Knowledge,
+) => {
+  const encoder = new TextEncoder();
+  return (controller: any) => {
+    knowledgeLoader(
+      {
+        modelName: model,
+        temperature,
+        prompt,
+        question,
+        knowledge,
+      },
+      (token) => {
+        controller.enqueue(encoder.encode(token));
+      },
+      () => {
+        controller.close();
+      },
+    );
   };
 };

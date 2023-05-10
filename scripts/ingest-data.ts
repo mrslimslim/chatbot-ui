@@ -1,20 +1,26 @@
-import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
-import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
-import { PineconeStore } from 'langchain/vectorstores/pinecone';
-import { pinecone } from '@/utils/pinecone';
 import { PINECONE_INDEX_NAME, PINECONE_NAME_SPACE } from '@/config/pinecone';
+import { PineconeClient } from '@pinecone-database/pinecone';
+import { CSVLoader } from 'langchain/document_loaders/fs/csv';
 import { DirectoryLoader } from 'langchain/document_loaders/fs/directory';
-import { TextLoader } from "langchain/document_loaders/fs/text";
-import { DocxLoader } from "langchain/document_loaders/fs/docx";
+import { DocxLoader } from 'langchain/document_loaders/fs/docx';
 import { PDFLoader } from 'langchain/document_loaders/fs/pdf';
-import { CSVLoader } from "langchain/document_loaders/fs/csv";
+import { TextLoader } from 'langchain/document_loaders/fs/text';
+import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
+import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
+import { PineconeStore } from 'langchain/vectorstores/pinecone';
 
 /* Name of directory to retrieve your files from */
 // const filePath = 'docs';
 
-export const ingestData = async (extension: string, filepath: string, namespace: string, chunkSize: number, chunkOverlap: number) => {
+export const ingestData = async (
+  extension: string,
+  filepath: string,
+  namespace: string,
+  chunkSize: number,
+  chunkOverlap: number,
+) => {
   try {
-    let loader = null
+    let loader = null;
     switch (extension) {
       case 'txt':
         loader = new TextLoader(filepath);
@@ -45,6 +51,11 @@ export const ingestData = async (extension: string, filepath: string, namespace:
 
     console.log('creating vector store...');
     /*create and store the embeddings in the vectorStore*/
+    const pinecone = new PineconeClient();
+    await pinecone.init({
+      environment: process.env.PINECONE_ENVIRONMENT ?? '', //this is in the dashboard
+      apiKey: process.env.PINECONE_API_KEY ?? '',
+    });
     const embeddings = new OpenAIEmbeddings();
     const index = pinecone.Index(PINECONE_INDEX_NAME); //change to your own index name
 
@@ -59,10 +70,9 @@ export const ingestData = async (extension: string, filepath: string, namespace:
       success: true,
       code: 200,
       message: 'Ingested data successfully',
-    }
+    };
   } catch (error) {
     console.log('error', error);
     throw new Error('Failed to ingest your data');
   }
 };
-
