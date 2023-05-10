@@ -67,7 +67,6 @@
     "eslint-config-next": "13.2.4",
     "gpt-3-encoder": "^1.1.4",
     "jsdom": "^21.1.1",
-    "playwright": "^1.33.0",
     "postcss": "^8.4.21",
     "prettier": "^2.8.7",
     "prettier-plugin-tailwindcss": "^0.2.5",
