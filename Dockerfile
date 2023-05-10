@@ -10,6 +10,7 @@ RUN npm ci
 # ---- Build ----
 FROM dependencies AS build
 COPY . .
+RUN npx playwright install 
 RUN npm run build
 
 # ---- Production ----
