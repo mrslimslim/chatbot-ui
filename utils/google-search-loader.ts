@@ -99,8 +99,6 @@ const getGoogleSearchResult = async (query: string) => {
     text: '',
   }));
 
-  console.log('sources', sources);
-
   const fetchSourceHTMl = async (url: string) => {
     const launchConfig =
       process.env.NODE_ENV === 'production'

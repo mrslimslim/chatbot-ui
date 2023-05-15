@@ -59,15 +59,15 @@ export const Knowledge: FC<Props> = ({
             {label}
         </label>
         <div className="w-full  border-neutral-200 bg-transparent pr-2 text-neutral-900 dark:border-neutral-600 dark:text-white">
-            <Checkbox onChange={onChange}>开启知识库</Checkbox>
+            <Checkbox onChange={onChange}><span className='text-white'>开启知识库</span></Checkbox>
             {
-                checked ? <div>
+                checked ? <div className='flex items-center mt-2'>
                     <Select
-                        className='w-full bg-transparent p-2'
+                        className='w-full bg-transparent mr-2'
                         onChange={handleChange}
                         options={list}
                     />
-                    <Button onClick={handleAddKnowledge}>新增知识库</Button>
+                    <Button onClick={handleAddKnowledge}><span className='text-white'>新增知识库</span></Button>
                 </div> : null
             }
 

@@ -80,7 +80,7 @@ const chatProxyParser = (
   knowledge?: Knowledge,
 ) => {
   //获取messages的最后一条信息
-  console.log('knowledge', knowledge);
+  console.log('knowledge', isKnowledgeBase, knowledge);
   const question = messages[messages.length - 1];
   // 判断question是否search规则
   if (rules.search(question.content)) {
@@ -118,7 +118,7 @@ const chatProxyParser = (
       questionContent = maybeQuestion[0];
     }
     return googleSearchParse(model, temperature, url, questionContent);
-  } else if (isKnowledgeBase) {
+  } else if (knowledge) {
     return knowledgeLoaderParse(
       model,
       temperature,

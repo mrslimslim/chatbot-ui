@@ -63,6 +63,8 @@ export async function knowledgeLoader(
     namespace: knowledge.namespace, //namespace comes from your config folder
   });
   const results = await vectorStore.similaritySearch(question, 4);
+  console.log('xxxx', results);
+
   const context = results.map((res) => res.pageContent).join('\n');
   console.log('context', context);
 
