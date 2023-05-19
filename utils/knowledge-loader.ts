@@ -38,6 +38,7 @@ export async function knowledgeLoader(
   onCloseStream: () => void,
 ) {
   const model = new ChatOpenAI({
+    modelName: modelName.id,
     temperature: 0,
     streaming: true,
     callbacks: CallbackManager.fromHandlers({

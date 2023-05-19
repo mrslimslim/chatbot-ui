@@ -40,6 +40,7 @@ import HomeContext from './home.context';
 import { HomeInitialState, initialState } from './home.state';
 
 import { v4 as uuidv4 } from 'uuid';
+import { isArray } from 'lodash-es';
 
 interface Props {
   serverSideApiKeyIsSet: boolean;
@@ -90,9 +91,8 @@ const Home = ({
     },
     { enabled: true, refetchOnMount: false },
   );
-
   useEffect(() => {
-    if (data) dispatch({ field: 'models', value: data });
+    if (data && isArray(data)) dispatch({ field: 'models', value: data.concat([{ id: 'claude-v1', name: 'claude-v1' }, { name: 'claude-v1-100k', id: 'claude-v1-100k' }, { name: 'claude-instant-v1', id: 'claude-instant-v1' }, { name: 'claude-instant-v1-100k', id: 'claude-instant-v1-100k' }]) });
   }, [data, dispatch]);
 
   useEffect(() => {

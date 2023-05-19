@@ -1,12 +1,14 @@
 // api/openai-chat.ts
 import { NextApiRequest, NextApiResponse } from 'next';
+
 import { DEFAULT_SYSTEM_PROMPT, DEFAULT_TEMPERATURE } from '@/utils/app/const';
-import { OpenAIError, OpenAIStream } from '@/utils/server';
+import { LLMStream, OpenAIError } from '@/utils/server';
+
 import { ChatBody, Message } from '@/types/chat';
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   try {
     const {
@@ -37,38 +39,48 @@ export default async function handler(
       messagesToSend = [message, ...messagesToSend];
     }
 
-    const stream = await OpenAIStream(
+    const stream = await LLMStream(
       model,
       promptToSend,
       temperatureToUse,
       key,
       messagesToSend,
       isKnowledgeBase,
-      knowledge
+      knowledge,
     );
 
     // Set up the headers for the stream response
     res.setHeader('Content-Type', 'application/octet-stream');
     res.setHeader('Cache-Control', 'no-store');
-    
+
     // Pipe the stream to the response
     // Read the stream and send the data to the client
     const reader = stream.getReader();
-    reader.read().then(function process({ done, value }) {
-      if (done) {
-        res.end();
-        return;
-      }
+    reader
+      .read()
+      .then(function process({ done, value }) {
+        if (done) {
+          res.end();
+          return;
+        }
 
-      res.write(Buffer.from(value));
-      reader.read().then(process).catch(error => {
+        res.write(Buffer.from(value));
+        reader
+          .read()
+          .then(process)
+          .catch((error) => {
+            console.error(error);
+            res
+              .status(500)
+              .json({ error: 'An error occurred while reading the stream' });
+          });
+      })
+      .catch((error) => {
         console.error(error);
-        res.status(500).json({ error: 'An error occurred while reading the stream' });
+        res
+          .status(500)
+          .json({ error: 'An error occurred while reading the stream' });
       });
-    }).catch(error => {
-      console.error(error);
-      res.status(500).json({ error: 'An error occurred while reading the stream' });
-    });
   } catch (error) {
     console.error(error);
     if (error instanceof OpenAIError) {

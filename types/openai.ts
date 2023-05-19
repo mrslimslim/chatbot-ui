@@ -7,6 +7,13 @@ export interface OpenAIModel {
   tokenLimit: number;
 }
 
+export interface ClaudeModel {
+  id: string;
+  name: string;
+  maxLength: number; // maximum length of a message
+  tokenLimit: number;
+}
+
 export enum OpenAIModelID {
   GPT_3_5 = 'gpt-3.5-turbo',
   GPT_3_5_AZ = 'gpt-35-turbo',
