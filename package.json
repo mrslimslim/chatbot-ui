@@ -29,6 +29,7 @@
     "i18next": "^22.4.13",
     "langchain": "^0.0.77",
     "lodash-es": "^4.17.21",
+    "microsoft-cognitiveservices-speech-sdk": "^1.28.0",
     "next": "13.2.4",
     "next-i18next": "^13.2.2",
     "openai": "^3.2.1",

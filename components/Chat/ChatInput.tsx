@@ -137,38 +137,38 @@ export const ChatInput = ({
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (showPromptList) {
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setActivePromptIndex((prevIndex) =>
-          prevIndex < prompts.length - 1 ? prevIndex + 1 : prevIndex,
-        );
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setActivePromptIndex((prevIndex) =>
-          prevIndex > 0 ? prevIndex - 1 : prevIndex,
-        );
-      } else if (e.key === 'Tab') {
-        e.preventDefault();
-        setActivePromptIndex((prevIndex) =>
-          prevIndex < prompts.length - 1 ? prevIndex + 1 : 0,
-        );
-      } else if (e.key === 'Enter') {
-        e.preventDefault();
-        handleInitModal();
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        setShowPromptList(false);
-      } else {
-        setActivePromptIndex(0);
-      }
-    } else if (e.key === 'Enter' && !isTyping && !isMobile() && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    } else if (e.key === '/' && e.metaKey) {
-      e.preventDefault();
-      setShowPluginSelect(!showPluginSelect);
-    }
+    // if (showPromptList) {
+    //   if (e.key === 'ArrowDown') {
+    //     e.preventDefault();
+    //     setActivePromptIndex((prevIndex) =>
+    //       prevIndex < prompts.length - 1 ? prevIndex + 1 : prevIndex,
+    //     );
+    //   } else if (e.key === 'ArrowUp') {
+    //     e.preventDefault();
+    //     setActivePromptIndex((prevIndex) =>
+    //       prevIndex > 0 ? prevIndex - 1 : prevIndex,
+    //     );
+    //   } else if (e.key === 'Tab') {
+    //     e.preventDefault();
+    //     setActivePromptIndex((prevIndex) =>
+    //       prevIndex < prompts.length - 1 ? prevIndex + 1 : 0,
+    //     );
+    //   } else if (e.key === 'Enter') {
+    //     e.preventDefault();
+    //     handleInitModal();
+    //   } else if (e.key === 'Escape') {
+    //     e.preventDefault();
+    //     setShowPromptList(false);
+    //   } else {
+    //     setActivePromptIndex(0);
+    //   }
+    // } else if (e.key === 'Enter' && !isTyping && !isMobile() && !e.shiftKey) {
+    //   e.preventDefault();
+    //   handleSend();
+    // } else if (e.key === '/' && e.metaKey) {
+    //   e.preventDefault();
+    //   setShowPluginSelect(!showPluginSelect);
+    // }
   };
 
   const parseVariables = (content: string) => {
