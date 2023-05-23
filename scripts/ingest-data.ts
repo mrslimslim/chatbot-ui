@@ -1,5 +1,6 @@
 import { PINECONE_INDEX_NAME, PINECONE_NAME_SPACE } from '@/config/pinecone';
 import { PineconeClient } from '@pinecone-database/pinecone';
+import fs from 'fs';
 import { CSVLoader } from 'langchain/document_loaders/fs/csv';
 import { DirectoryLoader } from 'langchain/document_loaders/fs/directory';
 import { DocxLoader } from 'langchain/document_loaders/fs/docx';
@@ -38,16 +39,23 @@ export const ingestData = async (
         loader = new TextLoader(filepath);
         break;
     }
-
     const rawDocs = await loader.load();
-
+    if (!chunkOverlap) chunkOverlap = 0;
+    console.log('chunkSize, chunkOverlap', chunkSize, chunkOverlap);
     const textSplitter = new RecursiveCharacterTextSplitter({
       chunkSize,
       chunkOverlap,
     });
 
     const docs = await textSplitter.splitDocuments(rawDocs);
-    console.log('split docs', docs);
+    // console.log(
+    //   'split docs',
+    //   docs.map((item: any) => item.loc),
+    // );
+
+    // 将docs 转为字符串 写到本地tmp.txt文件中
+    const log = JSON.stringify(docs);
+    fs.writeFileSync('./tmp.txt', log);
 
     console.log('creating vector store...');
     /*create and store the embeddings in the vectorStore*/
