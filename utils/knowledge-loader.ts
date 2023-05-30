@@ -5,9 +5,9 @@ import { PINECONE_INDEX_NAME, PINECONE_NAME_SPACE } from '@/config/pinecone';
 import { PineconeClient } from '@pinecone-database/pinecone';
 import * as cheerio from 'cheerio';
 import { CallbackManager } from 'langchain/callbacks';
-import { ConversationalRetrievalQAChain } from 'langchain/chains';
+// import { ConversationalRetrievalQAChain } from 'langchain/chains';
 import { ChatOpenAI } from 'langchain/chat_models/openai';
-import { PlaywrightWebBaseLoader } from 'langchain/document_loaders/web/playwright';
+// import { PlaywrightWebBaseLoader } from 'langchain/document_loaders/web/playwright';
 import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
 import {
   AIChatMessage,
@@ -17,6 +17,7 @@ import {
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { MemoryVectorStore } from 'langchain/vectorstores/memory';
 import { PineconeStore } from 'langchain/vectorstores/pinecone';
+import { getModel } from './llm-models';
 
 interface KnowledgeLoaderOptions {
   modelName: OpenAIModel;
@@ -37,7 +38,11 @@ export async function knowledgeLoader(
   onTokenStream: (token: string) => void,
   onCloseStream: () => void,
 ) {
-  const model = new ChatOpenAI({
+  let type = 'openai';
+  if (modelName.id.includes('claude')) {
+    type = 'anthropic';
+  }
+  const model = getModel(type,{
     modelName: modelName.id,
     temperature: 0,
     streaming: true,
@@ -63,16 +68,28 @@ export async function knowledgeLoader(
     textKey: 'text',
     namespace: knowledge.namespace, //namespace comes from your config folder
   });
-  const results = await vectorStore.similaritySearch(question, 4);
-  console.log('xxxx', results);
+  const results = await vectorStore.similaritySearch(question, 5);
 
-  const context = results.map((res) => res.pageContent).join('\n');
-  console.log('context', context);
+  const context = results.sort((a,b)=>{
+    let indexA = a.metadata.startScope.split('>').pop() || 0;
+    let indexB = b.metadata.startScope.split('>').pop() || 0;
+   return indexA - indexB
+  }).map((res :any) => {
+    console.log(res.metadata)
+    // compress the page content,remove blank lines
+    res.pageContent = res.pageContent.replace(/\n\s*\n/g, '\n');
+    // remove "description":[]
+    res.pageContent = res.pageContent.replace(/"description":\[\]/g, '');
+
+    return res.pageContent
+  }).join('\n');
+
+  console.log('context', context)
 
   // Now, you will act as a foreign senior business trader and a math teacher ,you have to be strict and sensitive to numbers and calculate and good at calculating the expression,I will show you a context
   const promptStr = promptTemplate(prompt, context);
   model.call([
-    new HumanChatMessage(promptStr),
+    new SystemChatMessage(promptStr),
     new AIChatMessage('Sure, please show me your question'),
     new HumanChatMessage(question),
   ]);

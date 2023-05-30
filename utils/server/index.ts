@@ -12,7 +12,7 @@ import { googleSearch } from '../google-search-loader';
 import { knowledgeLoader } from '../knowledge-loader';
 import { getModel } from '../llm-models';
 import { webLoader } from '../web-loader';
-import { webSearch } from '../web-search';
+// import { webSearch } from '../web-search';
 
 import { PINECONE_INDEX_NAME, PINECONE_NAME_SPACE } from '@/config/pinecone';
 import { PineconeClient } from '@pinecone-database/pinecone';
@@ -82,7 +82,6 @@ const chatProxyParser = (
   knowledge?: Knowledge,
 ) => {
   //获取messages的最后一条信息
-  console.log('knowledge', isKnowledgeBase, knowledge);
   const question = messages[messages.length - 1];
   // 判断question是否search规则
   if (rules.search(question.content)) {
@@ -273,7 +272,6 @@ const normalChatParse = async (
         },
       }),
     });
-    console.log('messages', messages);
     const systemMessages = new SystemChatMessage(systemPrompt);
     const chatMessages = messages.map((message) => {
       if (message.role === 'user') return new HumanChatMessage(message.content);
