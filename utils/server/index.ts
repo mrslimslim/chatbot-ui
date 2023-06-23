@@ -12,8 +12,8 @@ import { googleSearch } from '../google-search-loader';
 import { knowledgeLoader } from '../knowledge-loader';
 import { getModel } from '../llm-models';
 import { webLoader } from '../web-loader';
-// import { webSearch } from '../web-search';
 
+// import { webSearch } from '../web-search';
 import { PINECONE_INDEX_NAME, PINECONE_NAME_SPACE } from '@/config/pinecone';
 import { PineconeClient } from '@pinecone-database/pinecone';
 import {
@@ -89,6 +89,7 @@ const chatProxyParser = (
 
     // 正则提取url,做容错处理
     let url = '';
+    console.log('model', model);
     const maybeUrl = question.content.slice(3).match(/(http(s)?:\/\/)?\S+/);
     if (maybeUrl && maybeUrl.length > 0) {
       url = maybeUrl[0];

@@ -71,15 +71,15 @@ export async function knowledgeLoader(
   const results = await vectorStore.similaritySearch(question, 5);
 
   const context = results.sort((a,b)=>{
-    let indexA = a.metadata.startScope.split('>').pop() || 0;
-    let indexB = b.metadata.startScope.split('>').pop() || 0;
+    let indexA = a.metadata?.startScope?.split('>').pop() || 0;
+    let indexB = b.metadata?.startScope?.split('>').pop() || 0;
    return indexA - indexB
   }).map((res :any) => {
     console.log(res.metadata)
     // compress the page content,remove blank lines
-    res.pageContent = res.pageContent.replace(/\n\s*\n/g, '\n');
+    // res.pageContent = res.pageContent.replace(/\n\s*\n/g, '\n');
     // remove "description":[]
-    res.pageContent = res.pageContent.replace(/"description":\[\]/g, '');
+    // res.pageContent = res.pageContent.replace(/"description":\[\]/g, '');
 
     return res.pageContent
   }).join('\n');

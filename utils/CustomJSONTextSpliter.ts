@@ -90,7 +90,7 @@ export class CustomJSONTextSplitter extends RecursiveCharacterTextSplitter {
     // 使用正则表达式将属性名用双引号引起来
     // str = '(' + str + ')'; // 括号用于处理类似 '{a: 1}' 的对象字面量，使其能够被正确解析
     try {
-      const ast = acorn.parse(str);
+      const ast = acorn.parse(str, { ecmaVersion: 2020 });
       console.log('ast', ast)
       if (ast.type === 'Program' && ast.body.length === 0) {
         return false;

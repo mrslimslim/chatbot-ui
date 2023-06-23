@@ -29,6 +29,7 @@ export const getModel = (
       ...config,
     });
   }
+  console.log('config', config);
   return new ChatOpenAI({
     ...config,
   });
