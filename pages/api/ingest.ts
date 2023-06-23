@@ -22,6 +22,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   // body => {url: '/files/xxx.pdf'}
   // 判断文件是否存在
   const isExist = existsSync(`./${body.file.url}`);
+  // 判断是否是目录上传
+
+  
   try {
     // filename
     const filename = path.basename(body.file.url);
@@ -33,6 +36,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       namespace,
       body.chunkSize,
       body.chunkOverlap,
+      body.file.type
     );
     const data = {
       namespace,

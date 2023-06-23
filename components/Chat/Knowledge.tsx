@@ -1,7 +1,7 @@
 import { FC, useContext, useState } from 'react';
 import { useQuery } from 'react-query'
-import { UploadOutlined } from '@ant-design/icons';
-import { Checkbox, Select, Button, Modal, Input, Upload, InputNumber, message, Form } from 'antd';
+import { UploadOutlined, InboxOutlined } from '@ant-design/icons';
+import { Checkbox, Select, Button, Modal, Radio, Input, Upload, InputNumber, message, Form } from 'antd';
 import type { UploadProps } from 'antd';
 import type { CheckboxChangeEvent } from 'antd/es/checkbox';
 import { Knowledge as KnowledgeSetting } from '@/types/chat';
@@ -93,7 +93,7 @@ const KnowledgeDialog: FC<KnowledgeDialogProps> = ({
         action: '/api/upload',
         multiple: false,
         // pdf,cvs,txt
-        accept: '.pdf,.csv,.txt',
+        accept: '.pdf,.csv,.txt,.zip',
         onChange(info) {
             console.log(info);
             if (info.file.status !== 'uploading') {
@@ -107,6 +107,8 @@ const KnowledgeDialog: FC<KnowledgeDialogProps> = ({
             }
         },
     };
+
+
 
     const onFinish = async (values: any) => {
         setLoading(true);
@@ -172,6 +174,7 @@ const KnowledgeDialog: FC<KnowledgeDialogProps> = ({
                     >
                         <Input />
                     </Form.Item>
+                  
                     <Form.Item
                         label="上传文件"
                         name="file"
@@ -184,9 +187,19 @@ const KnowledgeDialog: FC<KnowledgeDialogProps> = ({
                             },
                         ]}
                     >
-                        <Upload {...props}>
+                        {/* <Upload {...props}  >
                             <Button icon={<UploadOutlined />}>Click to Upload</Button>
-                        </Upload>
+                        </Upload> */}
+                        {/* 根据isDirectoryUpload判断是否是文件上传 */}
+                        <Upload.Dragger {...props} directory={form.getFieldValue('isDirectoryUpload') === 2}>
+                            <p className="ant-upload-drag-icon">
+                                <InboxOutlined />
+                            </p>
+                            <p className="ant-upload-text">点击或者拖拽文件到此区域上传</p>
+                            <p className="ant-upload-hint">
+                                支持单个文件上传，支持文件类型：pdf,csv,txt
+                            </p>
+                        </Upload.Dragger>
                     </Form.Item>
                     <Form.Item
                         label="chunkSize"

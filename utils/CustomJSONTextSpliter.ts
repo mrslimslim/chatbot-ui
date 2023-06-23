@@ -26,6 +26,7 @@ export class CustomJSONTextSplitter extends RecursiveCharacterTextSplitter {
       let lineCounterIndex = 1;
       let prevChunk = null;
       if (!this.isValidJsObject(text)) {
+        console.log('text',text)
         throw new Error('jsonString is not a valid json string')
       }
       for (const chunk of await this.splitText(text)) {

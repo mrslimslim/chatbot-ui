@@ -20,26 +20,40 @@ export const ingestData = async (
   namespace: string,
   chunkSize: number,
   chunkOverlap: number,
+  type: string,
 ) => {
   try {
+
+    
     let loader = null;
-    switch (extension) {
-      case 'txt':
-        loader = new TextLoader(filepath);
-        break;
-      case 'docx':
-        loader = new DocxLoader(filepath);
-        break;
-      case 'pdf':
-        loader = new PDFLoader(filepath);
-        break;
-      case 'csv':
-        loader = new CSVLoader(filepath);
-        break;
-      default:
-        loader = new TextLoader(filepath);
-        break;
+    if(type === 'dir'){
+      console.log('dir')
+      loader = new DirectoryLoader(filepath, {
+        ".txt": (path: string) => new TextLoader(path),
+        ".docx": (path: string) => new DocxLoader(path),
+        ".pdf": (path: string) => new PDFLoader(path),
+        ".csv": (path: string) => new CSVLoader(path),
+      });
+    }else{
+      switch (extension) {
+        case 'txt':
+          loader = new TextLoader(filepath);
+          break;
+        case 'docx':
+          loader = new DocxLoader(filepath);
+          break;
+        case 'pdf':
+          loader = new PDFLoader(filepath);
+          break;
+        case 'csv':
+          loader = new CSVLoader(filepath);
+          break;
+        default:
+          loader = new TextLoader(filepath);
+          break;
+      }
     }
+    
     const rawDocs = await loader.load();
     if (!chunkOverlap) chunkOverlap = 0;
     console.log('chunkSize, chunkOverlap', chunkSize, chunkOverlap);
