@@ -32,5 +32,7 @@ export const getModel = (
   console.log('config', config);
   return new ChatOpenAI({
     ...config,
+  },{
+    basePath: process.env.OPENAI_BASE_PATH,
   });
 };
