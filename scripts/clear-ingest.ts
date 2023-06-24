@@ -15,7 +15,7 @@ export const run = async () => {
 
         index.delete1({
             deleteAll: true,
-            namespace: "43542995-3a7a-4def-8161-72d835326613.plain",
+            namespace: "0ff1527e-50dd-418a-8912-c2b2be38772e.plain",
         });
     }catch (error) {
         console.log('error', error);
