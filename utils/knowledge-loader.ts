@@ -68,7 +68,7 @@ export async function knowledgeLoader(
     textKey: 'text',
     namespace: knowledge.namespace, //namespace comes from your config folder
   });
-  const results = await vectorStore.similaritySearch(question, 5);
+  const results = await vectorStore.similaritySearch(question, 6);
 
   const context = results.sort((a,b)=>{
     let indexA = a.metadata?.startScope?.split('>').pop() || 0;

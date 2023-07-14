@@ -84,11 +84,12 @@ const chatProxyParser = (
   //获取messages的最后一条信息
   const question = messages[messages.length - 1];
   // 判断question是否search规则
+  let url = '';
+
   if (rules.search(question.content)) {
     // 如果是search规则，进入webSearch
 
     // 正则提取url,做容错处理
-    let url = '';
     console.log('model', model);
     const maybeUrl = question.content.slice(3).match(/(http(s)?:\/\/)?\S+/);
     if (maybeUrl && maybeUrl.length > 0) {

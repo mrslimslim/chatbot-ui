@@ -104,6 +104,7 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
           isKnowledgeBase: updatedConversation.isKnowledgeBase,
           knowledge: updatedConversation.knowledge,
         };
+        console.log(chatBody);
         const endpoint = getEndpoint(plugin);
         let body;
         if (!plugin) {

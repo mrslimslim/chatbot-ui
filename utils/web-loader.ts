@@ -10,7 +10,7 @@ import { PuppeteerWebBaseLoader } from 'langchain/document_loaders/web/puppeteer
 import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
 import { ContextualCompressionRetriever } from 'langchain/retrievers/contextual_compression';
 import { LLMChainExtractor } from 'langchain/retrievers/document_compressors/chain_extract';
-import { HumanChatMessage } from 'langchain/schema';
+import { HumanChatMessage, AIChatMessage } from 'langchain/schema';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { MemoryVectorStore } from 'langchain/vectorstores/memory';
 import debounce from 'lodash-es/debounce';
@@ -73,7 +73,9 @@ export async function webLoader(
   const vectorStore = await MemoryVectorStore.fromDocuments(docs, embeddings);
   const results = await vectorStore.similaritySearch(question, 3);
   const context = results.map((res) => res.pageContent).join('\n');
+  console.log('context', context);
   model.call([
+    new AIChatMessage('Sure, please show me your question'),
     new HumanChatMessage(`
       现在, 我将给你展示一段上下文，请根据上下文回答QUESTION的问题或者指令.
 

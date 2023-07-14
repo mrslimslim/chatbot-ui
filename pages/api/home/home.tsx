@@ -92,7 +92,7 @@ const Home = ({
     { enabled: true, refetchOnMount: false },
   );
   useEffect(() => {
-    if (data && isArray(data)) dispatch({ field: 'models', value: data.concat([{ id: 'claude-v1', name: 'claude-v1' }, { name: 'claude-v1-100k', id: 'claude-v1-100k' }, { name: 'claude-instant-v1', id: 'claude-instant-v1' }, { name: 'claude-instant-v1-100k', id: 'claude-instant-v1-100k' }]) });
+    if (data && isArray(data)) dispatch({ field: 'models', value: data.concat([ { name: 'claude-2', id: 'claude-2' }]) });
   }, [data, dispatch]);
 
   useEffect(() => {
